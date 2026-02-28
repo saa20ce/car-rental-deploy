@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:15
+    container_name: cars_db
+    environment:
+      POSTGRES_DB: myapp_db
+      POSTGRES_USER: myapp_user
+      POSTGRES_PASSWORD: myapp_pass
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [appnet]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ../cars-rental-backend
+    container_name: cars_backend
+    env_file:
+      - ../cars-rental-backend/.env
+    environment:
+      # если в .env у тебя POSTGRES_HOST=localhost — ВАЖНО переопределить:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    depends_on:
+      - db
+    networks: [appnet]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../cars-rental-frontend
+    container_name: cars_frontend
+    env_file:
+      - ../cars-rental-frontend/.env.production
+    environment:
+      NODE_ENV: production
+      # ВАЖНО: на сервере фронту лучше ходить в API через nginx по домену,
+      # но для server components можно и внутренним адресом:
+      DJANGO_INTERNAL_API: http://backend:8000
+    depends_on:
+      - backend
+    networks: [appnet]
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cars_nginx
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    networks: [appnet]
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: cars_certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    entrypoint: sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; done"
+
+networks:
+  appnet:
+
+volumes:
+  pgdata:
+  certbot_www:
+  letsencrypt:
