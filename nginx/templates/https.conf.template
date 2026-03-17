@@ -22,7 +22,7 @@ server {
   client_max_body_size 50m;
 
   location /api/ {
-    proxy_pass http://backend:8000/;
+    proxy_pass http://backend:8000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -38,11 +38,15 @@ server {
   }
 
   location /static/ {
-    proxy_pass http://backend:8000/static/;
+    alias /staticfiles/;
+    access_log off;
+    expires 30d;
   }
 
   location /media/ {
-    proxy_pass http://backend:8000/media/;
+    alias /mediafiles/;
+    access_log off;
+    expires 30d;
   }
 
   location ^~ /wp-content/uploads/ {

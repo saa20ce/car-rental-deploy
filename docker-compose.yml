@@ -30,6 +30,9 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     networks: [appnet]
+    volumes:
+      - staticfiles:/app/staticfiles
+      - mediafiles:/app/media
     restart: unless-stopped
 
   frontend:
@@ -44,7 +47,7 @@ services:
       - ../cars-rental-frontend/.env.production
     environment:
       NODE_ENV: production
-      DJANGO_INTERNAL_API: http://127.0.0.1:8000
+      DJANGO_INTERNAL_API: http://${DOMAIN}
       NEXT_PUBLIC_API_URL: https://${DOMAIN}
     depends_on:
       - backend
@@ -65,6 +68,8 @@ services:
       - ./nginx/entrypoint.sh:/entrypoint.sh:ro
       - certbot_www:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
+      - staticfiles:/staticfiles:ro
+      - mediafiles:/mediafiles:ro
     depends_on:
       - frontend
       - backend
@@ -115,3 +120,5 @@ volumes:
   pgdata:
   certbot_www:
   letsencrypt:
+  staticfiles:
+  mediafiles:
