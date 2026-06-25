@@ -28,7 +28,7 @@ die() {
 
 if command -v flock >/dev/null 2>&1 && [[ -z "${CAR_RENTAL_DEPLOY_WATCH_LOCKED:-}" ]]; then
   mkdir -p "$(dirname -- "$LOCK_FILE")"
-  exec flock -n "$LOCK_FILE" env CAR_RENTAL_DEPLOY_WATCH_LOCKED=1 "$SCRIPT_PATH" "$@"
+  exec flock -n "$LOCK_FILE" env CAR_RENTAL_DEPLOY_WATCH_LOCKED=1 /bin/bash "$SCRIPT_PATH" "$@"
 fi
 
 trap 'log "Watcher stopped"; exit 0' INT TERM
@@ -96,7 +96,7 @@ run_deploy() {
   local target="$1"
 
   log "Running deploy target: $target"
-  DEPLOY_SOURCE_REPO="watcher" "$DEPLOY_SCRIPT" "$target"
+  DEPLOY_SOURCE_REPO="watcher" /bin/bash "$DEPLOY_SCRIPT" "$target"
   log "Deploy target finished: $target"
 }
 
@@ -124,7 +124,7 @@ while true; do
     if run_deploy "$target"; then
       if [[ "$deploy_changed" == "1" ]]; then
         log "Deploy repository changed; restarting watcher to use the latest script"
-        exec "$SCRIPT_PATH" "$@"
+        exec /bin/bash "$SCRIPT_PATH" "$@"
       fi
     else
       log "Deploy failed; will retry on the next check"
