@@ -275,9 +275,83 @@ docker compose up -d frontend
 
 ---
 
+# 🔁 Автодеплой из GitHub Actions
+
+В каждом из трех репозиториев есть workflow на `push` в `main`:
+
+* `car-rental-deploy/.github/workflows/deploy.yml`
+* `cars-rental-backend/.github/workflows/deploy.yml`
+* `cars-rental-frontend/.github/workflows/deploy.yml`
+
+Workflow подключается к серверу по SSH и запускает общий скрипт:
+
+```bash
+car-rental-deploy/scripts/deploy.sh
+```
+
+Скрипт ставит lock от параллельных деплоев, подтягивает изменения из GitHub, собирает нужные Docker-сервисы и запускает:
+
+```bash
+docker compose up -d --remove-orphans
+```
+
+## Структура на сервере
+
+Репозитории должны лежать рядом, потому что `docker-compose.yml` использует соседние Docker build contexts:
+
+```bash
+/opt/car-rental/
+  car-rental-deploy/
+  cars-rental-backend/
+  cars-rental-frontend/
+```
+
+Если путь другой, укажи его в GitHub secret `DEPLOY_PATH`.
+
+## Secrets в GitHub
+
+Добавь эти secrets в каждый из трех репозиториев:
+
+```bash
+DEPLOY_HOST=server-ip-or-domain
+DEPLOY_USER=deploy
+DEPLOY_PORT=22
+DEPLOY_PATH=/opt/car-rental/car-rental-deploy
+DEPLOY_SSH_PRIVATE_KEY=<private ssh key>
+```
+
+Опционально можно добавить `DEPLOY_KNOWN_HOSTS`, чтобы не делать `ssh-keyscan` в workflow:
+
+```bash
+ssh-keyscan -H server-ip-or-domain
+```
+
+Пользователь `DEPLOY_USER` на сервере должен:
+
+* иметь доступ по SSH через ключ из `DEPLOY_SSH_PRIVATE_KEY`;
+* иметь право запускать Docker без `sudo`;
+* иметь настроенный `git pull` для всех трех репозиториев.
+
+## Проверка вручную на сервере
+
+```bash
+cd /opt/car-rental/car-rental-deploy
+bash ./scripts/deploy.sh all
+```
+
+Можно запускать только часть деплоя:
+
+```bash
+bash ./scripts/deploy.sh backend
+bash ./scripts/deploy.sh frontend
+bash ./scripts/deploy.sh deploy
+```
+
+---
+
 # 📌 TODO / улучшения
 
-* [ ] CI/CD (GitHub Actions)
+* [x] CI/CD (GitHub Actions)
 * [ ] staging окружение
 * [ ] S3 для media
 * [ ] кеширование (Redis)
