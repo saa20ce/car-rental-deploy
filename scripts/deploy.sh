@@ -32,7 +32,7 @@ esac
 
 if command -v flock >/dev/null 2>&1 && [[ -z "${CAR_RENTAL_DEPLOY_LOCKED:-}" ]]; then
   mkdir -p "$(dirname -- "$LOCK_FILE")"
-  exec flock "$LOCK_FILE" env CAR_RENTAL_DEPLOY_LOCKED=1 "$SCRIPT_PATH" "$@"
+  exec flock "$LOCK_FILE" env CAR_RENTAL_DEPLOY_LOCKED=1 /bin/bash "$SCRIPT_PATH" "$@"
 fi
 
 log "Deployment started: target=$TARGET source=${DEPLOY_SOURCE_REPO:-manual} sha=${DEPLOY_SHA:-unknown}"
@@ -60,7 +60,7 @@ if [[ -z "${CAR_RENTAL_DEPLOY_SELF_UPDATED:-}" ]]; then
     exec env \
       CAR_RENTAL_DEPLOY_LOCKED="${CAR_RENTAL_DEPLOY_LOCKED:-}" \
       CAR_RENTAL_DEPLOY_SELF_UPDATED=1 \
-      "$SCRIPT_PATH" "$@"
+      /bin/bash "$SCRIPT_PATH" "$@"
   fi
 fi
 

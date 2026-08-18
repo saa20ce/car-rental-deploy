@@ -23,7 +23,7 @@ server {
 
   # wp endpoint
   location = /api/contact {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -33,7 +33,7 @@ server {
   }
 
   location = /api/contact-director {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -43,7 +43,7 @@ server {
   }
   
   location = /api/contact-commercial {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -53,7 +53,7 @@ server {
   }
 
   location = /api/breadcrumbs {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -63,7 +63,7 @@ server {
   }
 
   location = /api/contact-form {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -74,7 +74,7 @@ server {
 
   # django endpoint
   location = /api/fast-form {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -123,7 +123,7 @@ server {
 
   # ВАЖНО: без Upgrade/Connection
   location / {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
