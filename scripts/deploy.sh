@@ -116,5 +116,10 @@ fi
 log "Starting Docker Compose stack"
 compose up -d --remove-orphans
 
+log "Running production smoke tests"
+if ! /bin/bash "$DEPLOY_DIR/scripts/smoke-test.sh"; then
+  die "Production smoke tests failed; see the deploy journal for diagnostics"
+fi
+
 log "Deployment finished"
 compose ps
