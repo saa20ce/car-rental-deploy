@@ -47,11 +47,11 @@ services:
       - ../cars-rental-frontend/.env.production
     environment:
       NODE_ENV: production
-      DJANGO_INTERNAL_API: http://backend:8000
+      DJANGO_INTERNAL_API: http://${DOMAIN}
       NEXT_PUBLIC_API_URL: https://${DOMAIN}
     depends_on:
       - backend
-    networks: [appnet]
+    network_mode: host
     restart: "unless-stopped"
 
   nginx:
@@ -61,6 +61,8 @@ services:
       - "443:443"
     environment:
       DOMAIN: ${DOMAIN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
       - ./nginx/entrypoint.sh:/entrypoint.sh:ro
