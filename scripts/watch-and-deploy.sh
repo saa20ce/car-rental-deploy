@@ -96,7 +96,10 @@ run_deploy() {
   local target="$1"
 
   log "Running deploy target: $target"
-  DEPLOY_SOURCE_REPO="watcher" /bin/bash "$DEPLOY_SCRIPT" "$target"
+  if ! DEPLOY_SOURCE_REPO="watcher" /bin/bash "$DEPLOY_SCRIPT" "$target"; then
+    log "Deploy target failed: $target"
+    return 1
+  fi
   log "Deploy target finished: $target"
 }
 

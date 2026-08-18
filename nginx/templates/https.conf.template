@@ -1,14 +1,25 @@
 server {
   listen 80;
-  server_name ${DOMAIN};
+  server_name ${DOMAIN} www.${DOMAIN};
 
   location /.well-known/acme-challenge/ {
     root /var/www/certbot;
   }
 
   location / {
-    return 301 https://$host$request_uri;
+    return 301 https://${DOMAIN}$request_uri;
   }
+}
+
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name www.${DOMAIN};
+
+  ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+
+  return 301 https://${DOMAIN}$request_uri;
 }
 
 server {
@@ -121,7 +132,7 @@ server {
     proxy_buffering off;
   }
 
-  # ВАЖНО: без Upgrade/Connection
+  # Without Upgrade/Connection for the Next.js production server.
   location / {
     proxy_pass http://frontend:3000;
     proxy_set_header Host $host;
@@ -132,4 +143,28 @@ server {
     proxy_read_timeout 60s;
     proxy_send_timeout 60s;
   }
+}
+
+server {
+  listen 80;
+  server_name new.rentasib.ru www.new.rentasib.ru;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location / {
+    return 301 https://${DOMAIN}$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl;
+  http2 on;
+  server_name new.rentasib.ru www.new.rentasib.ru;
+
+  ssl_certificate     /etc/letsencrypt/live/new.rentasib.ru/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/new.rentasib.ru/privkey.pem;
+
+  return 301 https://${DOMAIN}$request_uri;
 }
