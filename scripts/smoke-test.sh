@@ -48,7 +48,7 @@ check_url() {
   for ((attempt = 1; attempt <= ATTEMPTS; attempt += 1)); do
     read -r status total < <(
       curl -sS -o /dev/null --max-time 30 \
-        -w '%{http_code} %{time_total}' "$url" || printf '000 30'
+        -w '%{http_code} %{time_total}\n' "$url" || printf '000 30\n'
     )
     log "$label attempt=$attempt status=$status time=${total}s"
     if [[ "$status" == "200" ]]; then
