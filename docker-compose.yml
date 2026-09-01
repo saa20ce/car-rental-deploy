@@ -49,6 +49,9 @@ services:
       NODE_ENV: production
       DJANGO_INTERNAL_API: http://${DOMAIN}
       NEXT_PUBLIC_API_URL: https://${DOMAIN}
+      # Keep the WordPress data cache aligned with the homepage ISR interval.
+      # Without this override wpFetch keeps CMS responses for 24 hours.
+      WP_CACHE_REVALIDATE_SECONDS: "300"
     depends_on:
       - backend
     network_mode: host

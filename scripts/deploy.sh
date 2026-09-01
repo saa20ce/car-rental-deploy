@@ -95,23 +95,22 @@ if ! compose pull db nginx certbot certbot-renew nginx-reload; then
   log "Some public images were not pulled; continuing with local images"
 fi
 
-BUILD_SERVICES=()
 case "$TARGET" in
-  all|deploy)
-    BUILD_SERVICES=(backend frontend)
-    ;;
-  backend)
-    BUILD_SERVICES=(backend)
-    ;;
-  frontend)
-    BUILD_SERVICES=(frontend)
+  all|deploy|backend)
+    log "Building Docker service: backend"
+    compose build --pull backend
     ;;
 esac
 
-if [[ "${#BUILD_SERVICES[@]}" -gt 0 ]]; then
-  log "Building Docker services: ${BUILD_SERVICES[*]}"
-  compose build --pull "${BUILD_SERVICES[@]}"
-fi
+case "$TARGET" in
+  all|deploy|frontend)
+    wp_cache_build_key="$(date +%s)"
+    log "Building Docker service: frontend (WordPress cache key: $wp_cache_build_key)"
+    compose build --pull \
+      --build-arg WP_CACHE_BUILD_KEY="$wp_cache_build_key" \
+      frontend
+    ;;
+esac
 
 log "Starting Docker Compose stack"
 compose up -d --remove-orphans

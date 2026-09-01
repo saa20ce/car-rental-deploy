@@ -77,6 +77,9 @@ NEXT_PUBLIC_SITE_URL=https://new.rentasib.ru
 
 NEXT_PUBLIC_WP_BASE_URL=https://staged.rentasib.ru
 NEXT_PUBLIC_WP_API_URL=https://staged.rentasib.ru/wp-json/wp/v2
+
+# Как часто frontend запрашивает свежие данные WordPress (в секундах)
+WP_CACHE_REVALIDATE_SECONDS=300
 ```
 
 ---
@@ -269,9 +272,12 @@ docker compose logs -f
 ### Пересборка фронта
 
 ```bash
-docker compose build frontend --no-cache
-docker compose up -d frontend
+docker compose build --build-arg WP_CACHE_BUILD_KEY="$(date +%s)" frontend
+docker compose up -d --force-recreate frontend
 ```
+
+Новый `WP_CACHE_BUILD_KEY` сбрасывает кеш WordPress при ручной пересборке,
+не заставляя Docker заново скачивать и устанавливать все зависимости.
 
 ---
 
