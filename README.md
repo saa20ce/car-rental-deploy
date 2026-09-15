@@ -79,7 +79,7 @@ NEXT_PUBLIC_WP_BASE_URL=https://staged.rentasib.ru
 NEXT_PUBLIC_WP_API_URL=https://staged.rentasib.ru/wp-json/wp/v2
 
 # Как часто frontend запрашивает свежие данные WordPress (в секундах)
-WP_CACHE_REVALIDATE_SECONDS=300
+WP_CACHE_REVALIDATE_SECONDS=86400
 ```
 
 ---
