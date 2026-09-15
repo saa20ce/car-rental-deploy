@@ -25,6 +25,60 @@ die() {
   exit 1
 }
 
+DEPLOY_STARTED_SECONDS=$SECONDS
+HEARTBEAT_PID=""
+CURRENT_STEP="initialization"
+
+stop_heartbeat() {
+  if [[ -n "$HEARTBEAT_PID" ]]; then
+    kill "$HEARTBEAT_PID" 2>/dev/null || true
+    wait "$HEARTBEAT_PID" 2>/dev/null || true
+    HEARTBEAT_PID=""
+  fi
+}
+
+finish_deploy() {
+  local status=$?
+  stop_heartbeat
+  if (( status != 0 )); then
+    log "Deployment stopped: stage=$CURRENT_STEP exit=$status elapsed=$((SECONDS - DEPLOY_STARTED_SECONDS))s"
+  fi
+}
+trap finish_deploy EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+run_step() {
+  local label="$1" started=$SECONDS status=0
+  shift
+  CURRENT_STEP="$label"
+  log "START: $label"
+  (
+    # The status reporter must not retain the deployment lock.
+    exec 9>&-
+    sleeper=""
+    trap 'exit 0' INT TERM
+    trap 'if [[ -n "$sleeper" ]]; then kill "$sleeper" 2>/dev/null || true; wait "$sleeper" 2>/dev/null || true; fi' EXIT
+    while true; do
+      sleep 10 &
+      sleeper=$!
+      wait "$sleeper"
+      sleeper=""
+      log "IN PROGRESS: $label (elapsed $((SECONDS - started))s; waiting for command to finish)"
+    done
+  ) &
+  HEARTBEAT_PID=$!
+  "$@" || status=$?
+  stop_heartbeat
+  if (( status != 0 )); then
+    log "FAILED: $label (exit=$status, elapsed=$((SECONDS - started))s)"
+    return "$status"
+  fi
+  log "DONE: $label (elapsed $((SECONDS - started))s)"
+}
+
+export BUILDKIT_PROGRESS=plain
+
 case "$TARGET" in
   all|backend|frontend|deploy) ;;
   *) die "Unknown deploy target '$TARGET'. Use: all, backend, frontend, or deploy." ;;
@@ -32,7 +86,20 @@ esac
 
 if command -v flock >/dev/null 2>&1 && [[ -z "${CAR_RENTAL_DEPLOY_LOCKED:-}" ]]; then
   mkdir -p "$(dirname -- "$LOCK_FILE")"
-  exec flock "$LOCK_FILE" env CAR_RENTAL_DEPLOY_LOCKED=1 /bin/bash "$SCRIPT_PATH" "$@"
+  CURRENT_STEP="waiting for deployment lock"
+  log "Waiting for deployment lock: $LOCK_FILE (another deployment may be running)"
+  exec 9>"$LOCK_FILE"
+  while true; do
+    if flock -w 10 9; then
+      break
+    else
+      lock_status=$?
+      (( lock_status == 1 )) || die "Cannot acquire deployment lock (exit=$lock_status)"
+      log "Still waiting for another deployment to finish (elapsed ${SECONDS}s)"
+    fi
+  done
+  export CAR_RENTAL_DEPLOY_LOCKED=1
+  log "Deployment lock acquired"
 fi
 
 log "Deployment started: target=$TARGET source=${DEPLOY_SOURCE_REPO:-manual} sha=${DEPLOY_SHA:-unknown}"
@@ -44,9 +111,9 @@ update_repo() {
   [[ -d "$dir/.git" ]] || die "Git repository '$name' was not found at $dir"
 
   log "Updating $name ($BRANCH)"
-  git -C "$dir" fetch --prune origin "$BRANCH"
-  git -C "$dir" checkout "$BRANCH"
-  git -C "$dir" pull --ff-only origin "$BRANCH"
+  run_step "Fetch $name" git -C "$dir" fetch --prune origin "$BRANCH"
+  run_step "Checkout $name ($BRANCH)" git -C "$dir" checkout "$BRANCH"
+  run_step "Pull $name ($BRANCH)" git -C "$dir" pull --ff-only origin "$BRANCH"
   log "$name is at $(git -C "$dir" rev-parse --short HEAD)"
 }
 
@@ -91,14 +158,14 @@ compose() {
 cd "$DEPLOY_DIR"
 
 log "Pulling public Docker images"
-if ! compose pull db nginx certbot certbot-renew nginx-reload; then
+if ! run_step "Pull public Docker images" compose pull db nginx certbot certbot-renew nginx-reload; then
   log "Some public images were not pulled; continuing with local images"
 fi
 
 case "$TARGET" in
   all|deploy|backend)
     log "Building Docker service: backend"
-    compose build --pull backend
+    run_step "Build backend" compose build --pull backend
     ;;
 esac
 
@@ -106,19 +173,19 @@ case "$TARGET" in
   all|deploy|frontend)
     wp_cache_build_key="$(date +%s)"
     log "Building Docker service: frontend (WordPress cache key: $wp_cache_build_key)"
-    compose build --pull \
+    run_step "Build frontend" compose build --pull \
       --build-arg WP_CACHE_BUILD_KEY="$wp_cache_build_key" \
       frontend
     ;;
 esac
 
 log "Starting Docker Compose stack"
-compose up -d --remove-orphans
+run_step "Start Docker Compose stack" compose up -d --remove-orphans
 
 log "Running production smoke tests"
-if ! /bin/bash "$DEPLOY_DIR/scripts/smoke-test.sh"; then
+if ! run_step "Production smoke tests" /bin/bash "$DEPLOY_DIR/scripts/smoke-test.sh"; then
   die "Production smoke tests failed; see the deploy journal for diagnostics"
 fi
 
-log "Deployment finished"
+log "Deployment finished (elapsed $((SECONDS - DEPLOY_STARTED_SECONDS))s)"
 compose ps
