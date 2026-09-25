@@ -83,6 +83,7 @@ services:
       - letsencrypt:/etc/letsencrypt
       - staticfiles:/staticfiles:ro
       - mediafiles:/mediafiles:ro
+      - wp_media_cache:/var/cache/nginx/wp-media
     depends_on:
       - frontend
       - backend
@@ -139,3 +140,4 @@ volumes:
   letsencrypt:
   staticfiles:
   mediafiles:
+  wp_media_cache:

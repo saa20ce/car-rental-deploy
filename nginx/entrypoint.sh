@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+mkdir -p /var/cache/nginx/wp-media
+chown nginx:nginx /var/cache/nginx/wp-media
+
 echo "DOMAIN=$DOMAIN"
 
 if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
