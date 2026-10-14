@@ -4,15 +4,17 @@ set -eu
 mkdir -p /var/cache/nginx/wp-media
 chown nginx:nginx /var/cache/nginx/wp-media
 
-echo "DOMAIN=$DOMAIN"
-
-if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
-  echo "Using HTTPS template"
-  envsubst "\$DOMAIN" < /etc/nginx/templates/https.conf.template > /etc/nginx/conf.d/default.conf
-else
-  echo "Using HTTP bootstrap template"
-  envsubst "\$DOMAIN" < /etc/nginx/templates/http.conf.template > /etc/nginx/conf.d/default.conf
+FRONTEND_TARGET=legacy
+if [ -f /etc/nginx/runtime/frontend-target ]; then
+  FRONTEND_TARGET="$(cat /etc/nginx/runtime/frontend-target)"
 fi
+case "$FRONTEND_TARGET" in
+  legacy) FRONTEND_UPSTREAM=host.docker.internal:3000 ;;
+  blue) FRONTEND_UPSTREAM=frontend:3000 ;;
+  green) FRONTEND_UPSTREAM=frontend-green:3000 ;;
+  *) echo "Invalid frontend target: $FRONTEND_TARGET" >&2; exit 1 ;;
+esac
+export FRONTEND_UPSTREAM
 
-nginx -t
+sh /etc/nginx/templates/render.sh init
 exec nginx -g 'daemon off;'

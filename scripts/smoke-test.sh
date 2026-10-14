@@ -7,6 +7,11 @@ SITE_URL="${DEPLOY_SITE_URL:-}"
 WP_URL="${DEPLOY_WP_URL:-https://staged.rentasib.ru/wp-json/wp/v2/}"
 ATTEMPTS="${DEPLOY_SMOKE_ATTEMPTS:-6}"
 DELAY="${DEPLOY_SMOKE_DELAY:-5}"
+FRONTEND_SERVICE=frontend
+if [[ -f "$DEPLOY_DIR/runtime/frontend-target" &&
+      "$(<"$DEPLOY_DIR/runtime/frontend-target")" == green ]]; then
+  FRONTEND_SERVICE=frontend-green
+fi
 
 log() {
   printf '[%s] [smoke] %s\n' "$(date '+%Y-%m-%d %H:%M:%S%z')" "$*"
@@ -30,9 +35,9 @@ print_diagnostics() {
   log "Diagnostics for $label ($url)"
   curl -sS --max-time 30 -D - -o /dev/null "$url" || true
   compose ps || true
-  compose logs --tail=300 frontend nginx || true
+  compose logs --tail=300 "$FRONTEND_SERVICE" nginx || true
 
-  frontend_id="$(compose ps -q frontend 2>/dev/null || true)"
+  frontend_id="$(compose ps -q "$FRONTEND_SERVICE" 2>/dev/null || true)"
   if [[ -n "$frontend_id" ]]; then
     docker inspect --format \
       'container={{.Name}} image={{.Image}} started={{.State.StartedAt}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' \
@@ -65,7 +70,7 @@ check_wordpress_from_frontend() {
   local attempt
 
   for ((attempt = 1; attempt <= ATTEMPTS; attempt += 1)); do
-    if compose exec -T frontend wget -q -O /dev/null -T 20 "$WP_URL"; then
+    if compose exec -T "$FRONTEND_SERVICE" wget -q -O /dev/null -T 20 "$WP_URL"; then
       log "wordpress attempt=$attempt status=200"
       return 0
     fi

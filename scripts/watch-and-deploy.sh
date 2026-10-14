@@ -79,8 +79,10 @@ pick_target() {
   local backend_changed="$2"
   local frontend_changed="$3"
 
-  if [[ "$deploy_changed" == "1" ]]; then
+  if [[ "$deploy_changed" == "1" && ( "$backend_changed" == "1" || "$frontend_changed" == "1" ) ]]; then
     printf 'all\n'
+  elif [[ "$deploy_changed" == "1" ]]; then
+    printf 'deploy\n'
   elif [[ "$backend_changed" == "1" && "$frontend_changed" == "1" ]]; then
     printf 'all\n'
   elif [[ "$backend_changed" == "1" ]]; then

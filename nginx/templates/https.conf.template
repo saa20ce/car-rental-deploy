@@ -36,7 +36,7 @@ server {
 
   # wp endpoint
   location = /api/contact {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -46,7 +46,7 @@ server {
   }
 
   location = /api/contact-director {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -56,7 +56,7 @@ server {
   }
   
   location = /api/contact-commercial {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -66,7 +66,7 @@ server {
   }
 
   location = /api/breadcrumbs {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -76,7 +76,7 @@ server {
   }
 
   location = /api/contact-form {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -87,7 +87,7 @@ server {
 
   # django endpoint
   location = /api/fast-form {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -126,7 +126,7 @@ server {
 
   location ^~ /wp-content/uploads/ {
     rewrite ^/wp-content/uploads/(.*)$ /api/wp-media?url=https://staged.rentasib.ru/wp-content/uploads/$1? break;
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_cache wp_media;
     proxy_cache_valid 200 30d;
     proxy_cache_revalidate on;
@@ -151,7 +151,7 @@ server {
 
   # Without Upgrade/Connection for the Next.js production server.
   location / {
-    proxy_pass http://host.docker.internal:3000;
+    proxy_pass http://${FRONTEND_UPSTREAM};
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-Proto $scheme;
