@@ -125,7 +125,7 @@ server {
   }
 
   location ^~ /wp-content/uploads/ {
-    rewrite ^/wp-content/uploads/(.*)$ /wp-media?url=https://staged.rentasib.ru/wp-content/uploads/$1? break;
+    rewrite ^/wp-content/uploads/(.*)$ /api/wp-media?url=https://staged.rentasib.ru/wp-content/uploads/$1? break;
     proxy_pass http://host.docker.internal:3000;
     proxy_cache wp_media;
     proxy_cache_valid 200 30d;
